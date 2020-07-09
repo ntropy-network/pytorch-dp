@@ -1,4 +1,5 @@
 numpy>=1.15
+opt-einsum>=3.2
 torch>=1.3
 torchvision>=0.4
 tqdm>=4.40

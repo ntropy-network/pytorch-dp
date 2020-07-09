@@ -122,7 +122,7 @@ class PerSampleGradientClipper:
         """
         # step 0 : calculate the layer norms
         all_norms = calc_sample_norms(
-            named_params=self._named_grad_samples(),
+            named_params=self._named_grad_sample_norms(),
             flat=not self.norm_clipper.is_per_layer,
         )
 
@@ -133,7 +133,7 @@ class PerSampleGradientClipper:
         self._aggr_thresh = torch.max(
             self._aggr_thresh, self.norm_clipper.thresholds
         )  # retain the largest clipping thresholds accross the entire batch
-        batch_size = next(p.shape[0] for (_, p) in self._named_grad_samples())
+        batch_size = next(p.shape[0] for (_, p) in self._named_grad_sample_norms())
         # The  size for every param.grad_sample is the batch size
         self._aggr_batch_size += batch_size
 
@@ -142,7 +142,7 @@ class PerSampleGradientClipper:
         ):
             # Do the clipping
             name, p = named_param
-            summed_grad = self._weighted_sum(clip_factor, p.grad_sample)
+            summed_grad = p.grad_sample_weighted_sum(clip_factor)
             clipping_thresh = self._get_ith(self.norm_clipper.thresholds, i)
             per_sample_norm = self._get_ith(all_norms, i)
             # accumulate the summed gradient for this mini-batch
@@ -156,23 +156,20 @@ class PerSampleGradientClipper:
                 clip_factor,
                 clipping_thresh,
                 per_sample_norm,
-                p.grad_sample,
                 grad_before_clip=p.grad,
                 grad_after_clip=self._scale_summed_grad(summed_grad, batch_size),
             )
 
-            # remove the per-sample gradients
-            del p.grad_sample
         self._on_batch_clip()  # inform analysis of the whole module
 
     def _named_params(self):
         """helper function to get named_params that required grad"""
         return ((n, p) for n, p in self.module.named_parameters() if p.requires_grad)
 
-    def _named_grad_samples(self):
+    def _named_grad_sample_norms(self):
         """helper function to get named_params that required grad"""
         return (
-            (n, p.grad_sample)
+            (n, p.grad_sample_norm)
             for n, p in self.module.named_parameters()
             if p.requires_grad
         )
@@ -209,7 +206,6 @@ class PerSampleGradientClipper:
         clipping_factor=None,
         clipping_threshold=None,
         per_sample_norm=None,
-        per_sample_grad=None,
         grad_before_clip=None,
         grad_after_clip=None,
     ):
@@ -232,7 +228,6 @@ class PerSampleGradientClipper:
                 clipping_factor=clipping_factor,
                 clipping_threshold=clipping_threshold,
                 per_sample_norm=per_sample_norm,
-                per_sample_grad=per_sample_grad,
                 grad_before_clip=grad_before_clip,
                 grad_after_clip=grad_after_clip,
             )

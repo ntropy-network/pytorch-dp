@@ -268,7 +268,7 @@ def calc_sample_norms(
         stats_required: a flag, when set to True, the function will provide some
             statistics over the batch, including mean, median, and max values
     """
-    norms = [param.view(len(param), -1).norm(2, dim=-1) for name, param in named_params]
+    norms = [param for name, param in named_params]
     # calc norm over all layer norms if flat = True
     if flat:
         norms = [torch.stack(norms, dim=0).norm(2, dim=0)]

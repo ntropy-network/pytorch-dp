@@ -160,8 +160,6 @@ def _compute_grad_sample(
     if batch_dim != 0:
         A = A.permute([batch_dim] + [x for x in range(A.dim()) if x != batch_dim])
         B = B.permute([batch_dim] + [x for x in range(B.dim()) if x != batch_dim])
+    
     # compute grad sample for  individual layers
-    compute_layer_grad_sample = _supported_layers_grad_samplers.get(
-        get_layer_type(layer)
-    )
-    compute_layer_grad_sample(layer, A, B)
+    _supported_layers_grad_samplers.get(get_layer_type(layer))(layer, A, B)

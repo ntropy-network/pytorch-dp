@@ -53,7 +53,6 @@ def enable_stats(stats_dir):
         clipping_factor,
         clipping_threshold,
         per_sample_norm,
-        per_sample_grad,
         grad_before_clip,
         grad_after_clip,
     ):
